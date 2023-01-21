@@ -115,7 +115,7 @@ contract AiShiba is GasHelper, ERC20 {
     return owner();
   }
 
-  function getFeeTotal() public view returns (uint) {
+  function getFeeTotal() public pure returns (uint) {
     return feePool + feeReflect + feeBurnRate + feeAdministrationWallet;
   }
 
