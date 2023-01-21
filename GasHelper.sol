@@ -34,19 +34,6 @@ contract GasHelper is AttributeMap {
     return token0 != tokenA;
   }
 
-  // gas optimization on transfer token
-  function tokenTransfer(address token, address recipient, uint amount) internal {
-    bool failed = false;
-    assembly {
-      let emptyPointer := mload(0x40)
-      mstore(emptyPointer, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
-      mstore(add(emptyPointer, 0x04), recipient)
-      mstore(add(emptyPointer, 0x24), amount)
-      failed := iszero(call(gas(), token, 0, emptyPointer, 0x44, 0, 0))
-    }
-    if (failed) revert("Unable to transfer token");
-  }
-
   // gas optimization on transfer from token method
   function tokenTransferFrom(address token, address from, address recipient, uint amount) internal {
     bool failed = false;

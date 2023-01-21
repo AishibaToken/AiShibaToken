@@ -28,10 +28,10 @@ contract AiShiba is GasHelper, ERC20 {
   uint public _minAmountToAutoSwap = 10000 * (10 ** decimals()); // 100
 
   // Fees
-  uint public feePool = 100;
-  uint public feeReflect = 100;
-  uint public feeBurnRate = 100;
-  uint public feeAdministrationWallet = 200;
+  uint constant public feePool = 100;
+  uint constant public feeReflect = 100;
+  uint constant public feeBurnRate = 100;
+  uint constant public feeAdministrationWallet = 200;
 
   uint constant maxTotalFee = 1000;
 
