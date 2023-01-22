@@ -17,23 +17,22 @@ contract AiShiba is GasHelper, ERC20 {
   address constant PANCAKE_ROUTER = 0x10ED43C718714eb63d5aA57B78B54704E256024E; // ? PROD
   // address constant PANCAKE_ROUTER = 0xD99D1c33F9fC3444f8101754aBC46c52416550D1; // ? TESTNET
 
-  string constant _name = "Ai Shiba";
-  string constant _symbol = "AISHIBA";
+  string constant NAME = "Ai Shiba";
+  string constant SYMBOL = "AISHIBA";
 
-  string public constant url = "www.aishiba.com";
+  string public constant URL = "www.aishiba.com";
 
-  uint constant maxSupply = 100_000_000_000_000e18;
+  uint constant MAX_SUPPLY = 100_000_000_000_000e18;
 
   // Wallets limits
-  uint public _minAmountToAutoSwap = 10000 * (10 ** decimals()); // 100
+  uint public minAmountToAutoSwap = 10000 * (10 ** decimals()); // 100
 
   // Fees
-  uint constant public feePool = 100;
-  uint constant public feeReflect = 100;
-  uint constant public feeBurnRate = 100;
-  uint constant public feeAdministrationWallet = 200;
+  uint constant public FEE_POOL = 100;
+  uint constant public FEE_REFLECT = 100;
+  uint constant public FEE_ADMINISTRATION_WALLET = 300;
 
-  uint constant maxTotalFee = 1000;
+  uint constant MAX_TOTAL_FEE = 1000;
 
   mapping(address => uint) public specialFeesByWalletSender;
   mapping(address => uint) public specialFeesByWalletReceiver;
@@ -63,7 +62,7 @@ contract AiShiba is GasHelper, ERC20 {
   // Reflect VARIABLES
   mapping(address => HolderShare) public holderMap;
 
-  uint private constant reflectPrecision = 10 ** 18;
+  uint private constant REFLECT_PRECISION = 10 ** 18;
   uint private reflectPerShare;
 
   uint public minTokenHoldToReflect = 100 * (10 ** decimals()); // min holder must have to be able to receive reflect
@@ -77,7 +76,7 @@ contract AiShiba is GasHelper, ERC20 {
 
   receive() external payable {}
 
-  constructor() ERC20(_name, _symbol) {
+  constructor() ERC20(NAME, SYMBOL) {
     permissions[0][_msgSender()] = true;
     permissions[1][_msgSender()] = true;
     permissions[2][_msgSender()] = true;
@@ -107,7 +106,7 @@ contract AiShiba is GasHelper, ERC20 {
 
     _attributeMap[swapHelperAddress] = baseAttributes;
 
-    _mint(_msgSender(), maxSupply);
+    _mint(_msgSender(), MAX_SUPPLY);
   }
 
   // ----------------- Public Views -----------------
@@ -116,23 +115,21 @@ contract AiShiba is GasHelper, ERC20 {
   }
 
   function getFeeTotal() public pure returns (uint) {
-    return feePool + feeReflect + feeBurnRate + feeAdministrationWallet;
+    return FEE_POOL + FEE_REFLECT + FEE_ADMINISTRATION_WALLET;
   }
 
-  function getSpecialWalletFee(address target, bool isSender) public view returns (uint reflect, uint pool, uint burnRate, uint adminFee) {
+  function getSpecialWalletFee(address target, bool isSender) public view returns (uint reflect, uint pool, uint adminFee) {
     uint composedValue = isSender ? specialFeesByWalletSender[target] : specialFeesByWalletReceiver[target];
     reflect = composedValue % 1e4;
     composedValue = composedValue / 1e4;
     pool = composedValue % 1e4;
-    composedValue = composedValue / 1e4;
-    burnRate = composedValue % 1e4;
     composedValue = composedValue / 1e4;
     adminFee = composedValue % 1e4;
   }
 
   function balanceOf(address account) public view override returns (uint) {
     uint entryPointMarkup = holderMap[account].entryPointMarkup;
-    uint totalToBePaid = (holderMap[account].amountToken * reflectPerShare) / reflectPrecision;
+    uint totalToBePaid = (holderMap[account].amountToken * reflectPerShare) / REFLECT_PRECISION;
     return _balances[account] + (totalToBePaid <= entryPointMarkup ? 0 : totalToBePaid - entryPointMarkup);
   }
 
@@ -165,18 +162,18 @@ contract AiShiba is GasHelper, ERC20 {
 
   // ----------------- Fee Settings -----------------
 
-  function setSpecialWalletFeeOnSend(address target, uint reflect, uint pool, uint burnRate, uint adminFee) public isAuthorized(1) {
-    setSpecialWalletFee(target, true, reflect, pool, burnRate, adminFee);
+  function setSpecialWalletFeeOnSend(address target, uint reflect, uint pool, uint adminFee) public isAuthorized(1) {
+    setSpecialWalletFee(target, true, reflect, pool, adminFee);
   }
 
-  function setSpecialWalletFeeOnReceive(address target, uint reflect, uint pool, uint burnRate, uint adminFee) public isAuthorized(1) {
-    setSpecialWalletFee(target, false, reflect, pool, burnRate, adminFee);
+  function setSpecialWalletFeeOnReceive(address target, uint reflect, uint pool, uint adminFee) public isAuthorized(1) {
+    setSpecialWalletFee(target, false, reflect, pool, adminFee);
   }
 
-  function setSpecialWalletFee(address target, bool isSender, uint reflect, uint pool, uint burnRate, uint adminFee) private {
-    uint total = reflect + pool + burnRate + adminFee;
-    require(total <= maxTotalFee, "All rates and fee together must be lower than 10%");
-    uint composedValue = reflect + (pool * 1e4) + (burnRate * 1e8) + (adminFee * 1e12);
+  function setSpecialWalletFee(address target, bool isSender, uint reflect, uint pool, uint adminFee) private {
+    uint total = reflect + pool + adminFee;
+    require(total <= MAX_TOTAL_FEE, "All rates and fee together must be lower than 10%");
+    uint composedValue = reflect + (pool * 1e4) + (adminFee * 1e8);
     if (isSender) {
       specialFeesByWalletSender[target] = composedValue;
     } else {
@@ -187,7 +184,7 @@ contract AiShiba is GasHelper, ERC20 {
   // ----------------- Token Flow Settings -----------------
 
   function setMinAmountToAutoSwap(uint amount) public isAuthorized(1) {
-    _minAmountToAutoSwap = amount;
+    minAmountToAutoSwap = amount;
   }
 
   struct Receivers {
@@ -227,26 +224,24 @@ contract AiShiba is GasHelper, ERC20 {
 
     uint adminFee;
     uint poolFee;
-    uint burnFee;
     uint reflectFee;
 
     // Calculate Fees
     uint feeAmount = 0;
     if (!isExemptFeeSender(senderAttributes) && !isExemptFeeReceiver(receiverAttributes)) {
       if (isSpecialFeeWalletSender(senderAttributes)) {
-        (reflectFee, poolFee, burnFee, adminFee) = getSpecialWalletFee(sender, true); // Check special wallet fee on sender
+        (reflectFee, poolFee, adminFee) = getSpecialWalletFee(sender, true); // Check special wallet fee on sender
       } else if (isSpecialFeeWalletReceiver(receiverAttributes)) {
-        (reflectFee, poolFee, burnFee, adminFee) = getSpecialWalletFee(receiver, false); // Check special wallet fee on receiver
+        (reflectFee, poolFee, adminFee) = getSpecialWalletFee(receiver, false); // Check special wallet fee on receiver
       } else {
-        adminFee = feeAdministrationWallet;
-        poolFee = feePool;
-        burnFee = feeBurnRate;
-        reflectFee = feeReflect;
+        adminFee = FEE_ADMINISTRATION_WALLET;
+        poolFee = FEE_POOL;
+        reflectFee = FEE_REFLECT;
       }
-      feeAmount = ((reflectFee + poolFee + burnFee + adminFee) * amount) / 10_000;
+      feeAmount = ((reflectFee + poolFee + adminFee) * amount) / 10_000;
     }
 
-    if (feeAmount != 0) splitFee(feeAmount, sender, adminFee, poolFee, burnFee, reflectFee);
+    if (feeAmount != 0) splitFee(feeAmount, sender, adminFee, poolFee, reflectFee);
     if ((!pausedSwapPool || !pausedSwapAdmin) && !isExemptSwapperMaker(senderAttributes)) autoSwap(sender);
 
     // Update Recipient Balance
@@ -290,7 +285,7 @@ contract AiShiba is GasHelper, ERC20 {
     uint adminAmount = accumulatedToAdmin;
     uint totalAmount = poolAmount + adminAmount;
 
-    if (totalAmount < _minAmountToAutoSwap) return;
+    if (totalAmount < minAmountToAutoSwap) return;
 
     // Execute auto swap
     uint amountOut = operateSwap(liquidityPair, swapHelper, totalAmount);
@@ -338,15 +333,8 @@ contract AiShiba is GasHelper, ERC20 {
     accumulatedToAdmin = 0;
   }
 
-  function splitFee(uint incomingFeeAmount, address sender, uint adminFee, uint poolFee, uint burnFee, uint reflectFee) private {
-    uint totalFee = adminFee + poolFee + burnFee + reflectFee;
-
-    //Burn
-    if (burnFee > 0) {
-      uint burnAmount = (incomingFeeAmount * burnFee) / totalFee;
-      _balances[address(this)] += burnAmount;
-      _burn(address(this), burnAmount);
-    }
+  function splitFee(uint incomingFeeAmount, address sender, uint adminFee, uint poolFee, uint reflectFee) private {
+    uint totalFee = adminFee + poolFee + reflectFee;
 
     if (reflectFee > 0) {
       accumulatedToReflect += (incomingFeeAmount * reflectFee) / totalFee;
@@ -392,7 +380,7 @@ contract AiShiba is GasHelper, ERC20 {
     uint accumulated = accumulatedToReflect;
     if (accumulated > 0) {
       uint consideredTotalTokens = totalTokens;
-      reflectPerShareValue += (accumulated * reflectPrecision) / (consideredTotalTokens == 0 ? 1 : consideredTotalTokens);
+      reflectPerShareValue += (accumulated * REFLECT_PRECISION) / (consideredTotalTokens == 0 ? 1 : consideredTotalTokens);
       reflectPerShare = reflectPerShareValue;
       accumulatedToReflect = 0;
     }
@@ -407,7 +395,7 @@ contract AiShiba is GasHelper, ERC20 {
 
     if (holderAmount > 0) {
       uint entryPointMarkup = holderMap[holder].entryPointMarkup;
-      uint totalToBePaid = (holderAmount * reflectPerShareValue) / reflectPrecision;
+      uint totalToBePaid = (holderAmount * reflectPerShareValue) / REFLECT_PRECISION;
       if (totalToBePaid > entryPointMarkup) {
         uint toReceive = totalToBePaid - entryPointMarkup;
         _balances[holder] += toReceive;
@@ -417,6 +405,6 @@ contract AiShiba is GasHelper, ERC20 {
 
     totalTokens = (totalTokens - holderAmount) + consideredAmount;
     holderMap[holder].amountToken = consideredAmount;
-    holderMap[holder].entryPointMarkup = (consideredAmount * reflectPerShareValue) / reflectPrecision;
+    holderMap[holder].entryPointMarkup = (consideredAmount * reflectPerShareValue) / REFLECT_PRECISION;
   }
 }
